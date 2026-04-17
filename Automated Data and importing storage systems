@@ -1,0 +1,116 @@
+import pandas as pd
+import sqlite3
+import os
+
+# Database connection
+conn = sqlite3.connect("data.db")
+cursor = conn.cursor()
+
+# Create table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    marks INTEGER
+)
+""")
+
+# Function to import data from CSV
+def import_data():
+    file_name = input("Enter CSV file name: ")
+    
+    if not os.path.exists(file_name):
+        print("❌ File not found!")
+        return
+    
+    try:
+        df = pd.read_csv(file_name)
+        
+        # Data Cleaning
+        df.dropna(inplace=True)  # Remove empty values
+        
+        print("\n📥 Imported Data:")
+        print(df)
+
+        # Store in database
+        df.to_sql("students", conn, if_exists="append", index=False)
+        
+        print("✅ Data successfully stored in database")
+    
+    except Exception as e:
+        print("❌ Error:", e)
+
+# Function to view all data
+def view_data():
+    cursor.execute("SELECT * FROM students")
+    rows = cursor.fetchall()
+
+    print("\n📊 Stored Data:")
+    for row in rows:
+        print(row)
+
+# Function to search data
+def search_data():
+    name = input("Enter name to search: ")
+    
+    cursor.execute("SELECT * FROM students WHERE name LIKE ?", ('%' + name + '%',))
+    rows = cursor.fetchall()
+
+    if rows:
+        print("\n🔍 Search Results:")
+        for row in rows:
+            print(row)
+    else:
+        print("❌ No records found")
+
+# Function to delete data
+def delete_data():
+    student_id = input("Enter ID to delete: ")
+    
+    cursor.execute("DELETE FROM students WHERE id=?", (student_id,))
+    conn.commit()
+    
+    print("🗑 Data deleted successfully")
+
+# Function to update data
+def update_data():
+    student_id = input("Enter ID to update: ")
+    new_marks = input("Enter new marks: ")
+    
+    cursor.execute("UPDATE students SET marks=? WHERE id=?", (new_marks, student_id))
+    conn.commit()
+    
+    print("✏ Data updated successfully")
+
+# Main menu
+def main():
+    while True:
+        print("\n===== Automated Data System =====")
+        print("1. Import Data")
+        print("2. View Data")
+        print("3. Search Data")
+        print("4. Update Data")
+        print("5. Delete Data")
+        print("6. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            import_data()
+        elif choice == "2":
+            view_data()
+        elif choice == "3":
+            search_data()
+        elif choice == "4":
+            update_data()
+        elif choice == "5":
+            delete_data()
+        elif choice == "6":
+            print("👋 Exiting program...")
+            break
+        else:
+            print("❌ Invalid choice, try again")
+
+if __name__ == "__main__":
+    main()
